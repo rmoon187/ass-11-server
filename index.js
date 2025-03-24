@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion, } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId, } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -43,6 +43,46 @@ async function run() {
             const result = await addedQueries.insertOne(newQuery);
             res.send(result);
         });
+
+        app.get("/my-queries", async (req, res) => {
+
+            const userEmail = req.query.userEmail;
+            const products = await addedQueries.find({ userEmail }).toArray();
+            res.send(products);
+
+        });
+
+        app.delete("/my-queries/:id", async (req, res) => {
+            const id = req.params.id;
+            const result = await addedQueries.deleteOne({ _id: new ObjectId(id) });
+            res.send(result);
+        });
+
+        app.get("/my-queries/:id", async (req, res) => {
+            const id = req.params.id;
+            const q = await addedQueries.findOne({ _id: new ObjectId(id) });
+            q._id = q._id.toString();
+            res.send(q);
+        });
+
+        app.put("/my-queries/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const updatedQuery = req.body;
+            const updateDoc = {
+                $set: {
+                    productName: updatedQuery.productName,
+                    productBrand: updatedQuery.productBrand,
+                    productImage: updatedQuery.productImage,
+                    queryTitle: updatedQuery.queryTitle,
+                    reasonDetails: updatedQuery.reasonDetails,
+
+                },
+            }
+            const result = await addedQueries.updateOne(query, updateDoc);
+            res.send(result);
+
+        })
 
 
     } finally {
