@@ -32,6 +32,7 @@ async function run() {
 
         const database = client.db("recomHubDb");
         const addedQueries = database.collection("addedQueries");
+        const recommendations = database.collection("recommendations");
 
         // Test Route
         app.get("/", (req, res) => {
@@ -47,7 +48,12 @@ async function run() {
         app.get("/my-queries", async (req, res) => {
 
             const userEmail = req.query.userEmail;
-            const products = await addedQueries.find({ userEmail }).toArray();
+            if (userEmail) {
+                const products = await addedQueries.find({ userEmail }).toArray();
+                return res.send(products);
+            }
+
+            const products = await addedQueries.find().toArray();
             res.send(products);
 
         });
@@ -55,6 +61,16 @@ async function run() {
         app.delete("/my-queries/:id", async (req, res) => {
             const id = req.params.id;
             const result = await addedQueries.deleteOne({ _id: new ObjectId(id) });
+            res.send(result);
+        });
+
+        app.patch("/my-queries/:id", async (req, res) => {
+            const id = req.params.id;
+            const fieldName = "recommendationCount";
+            const result = await addedQueries.updateOne(
+                { _id: new ObjectId(id) },
+                { $inc: { [fieldName]: 1 } }
+            );
             res.send(result);
         });
 
@@ -83,6 +99,19 @@ async function run() {
             res.send(result);
 
         })
+
+        app.post("/recommendations", async (req, res) => {
+            const newRec = req.body;
+            const result = await recommendations.insertOne(newRec);
+            res.send(result);
+        });
+
+        app.get("/recommendations/:queryId", async (req, res) => {
+            const id = req.params.queryId;
+            const rec = await recommendations.find({ queryId: id }).toArray();
+            res.send(rec);
+        });
+
 
 
     } finally {
