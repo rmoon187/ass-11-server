@@ -64,12 +64,22 @@ async function run() {
             res.send(result);
         });
 
-        app.patch("/my-queries/:id", async (req, res) => {
+        app.patch("/my-queries/:id/increment", async (req, res) => {
             const id = req.params.id;
             const fieldName = "recommendationCount";
             const result = await addedQueries.updateOne(
                 { _id: new ObjectId(id) },
                 { $inc: { [fieldName]: 1 } }
+            );
+            res.send(result);
+        });
+
+        app.patch("/my-queries/:id/decrement", async (req, res) => {
+            const id = req.params.id;
+            const fieldName = "recommendationCount";
+            const result = await addedQueries.updateOne(
+                { _id: new ObjectId(id) },
+                { $inc: { [fieldName]: -1 } }
             );
             res.send(result);
         });
@@ -100,10 +110,22 @@ async function run() {
 
         })
 
+        // recommendations apis
+
         app.post("/recommendations", async (req, res) => {
             const newRec = req.body;
             const result = await recommendations.insertOne(newRec);
             res.send(result);
+        });
+
+        app.get("/recommendations", async (req, res) => {
+            const recommenderEmail = req.query.userEmail;
+            if (recommenderEmail) {
+                const rec = await recommendations.find({ recommenderEmail }).toArray();
+                return res.send(rec);
+            }
+            const rec = await recommendations.find().toArray();
+            res.send(rec);
         });
 
         app.get("/recommendations/:queryId", async (req, res) => {
@@ -111,6 +133,13 @@ async function run() {
             const rec = await recommendations.find({ queryId: id }).toArray();
             res.send(rec);
         });
+
+        app.delete("/recommendations/:id", async (req, res) => {
+            const id = req.params.id;
+            const result = await recommendations.deleteOne({ _id: new ObjectId(id) });
+            res.send(result);
+        });
+
 
 
 
