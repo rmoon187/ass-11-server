@@ -120,12 +120,15 @@ async function run() {
 
         app.get("/recommendations", async (req, res) => {
             const recommenderEmail = req.query.userEmail;
+            const userEmail = req.query.queryUserEmail
             if (recommenderEmail) {
                 const rec = await recommendations.find({ recommenderEmail }).toArray();
                 return res.send(rec);
             }
-            const rec = await recommendations.find().toArray();
-            res.send(rec);
+            if (userEmail) {
+                const rec = await recommendations.find({ userEmail }).toArray();
+                return res.send(rec);
+            }
         });
 
         app.get("/recommendations/:queryId", async (req, res) => {
