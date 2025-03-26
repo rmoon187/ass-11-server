@@ -46,17 +46,23 @@ async function run() {
         });
 
         app.get("/my-queries", async (req, res) => {
-
             const userEmail = req.query.userEmail;
+            const limit = parseInt(req.query.limit) || 0;
+
+            let query = {};
             if (userEmail) {
-                const products = await addedQueries.find({ userEmail }).toArray();
-                return res.send(products);
+                query.userEmail = userEmail;
             }
 
-            const products = await addedQueries.find().toArray();
-            res.send(products);
+            const queries = await addedQueries
+                .find(query)
+                .sort({ createdAt: -1 })
+                .limit(limit)
+                .toArray();
 
+            res.send(queries);
         });
+
 
         app.delete("/my-queries/:id", async (req, res) => {
             const id = req.params.id;
