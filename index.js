@@ -1,14 +1,35 @@
 require("dotenv").config();
 const express = require("express");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const cors = require("cors");
+
 const { MongoClient, ServerApiVersion, ObjectId, } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+
+const verifyToken = (req, res, next) => {
+    const token = req.cookies?.token;
+
+    if (!token) {
+        return res.status(401).send({ message: "Unauthorized access" });
+    }
+
+    jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+        if (err) {
+            return res.status(403).json({ message: "Forbidden access" });
+        }
+        req.user = decoded;
+        next();
+    });
+};
+
 
 // MongoDB Connection
 const uri = `mongodb+srv://ass-11-user:${encodeURIComponent(process.env.DB_Pass)}@cluster0.isok8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -39,15 +60,43 @@ async function run() {
             res.send(" mango Server is running!");
         });
 
-        app.post("/my-queries", async (req, res) => {
+        // generate jwt
+        app.post("/jwt", async (req, res) => {
+            const userEmail = req.body;
+            // create token
+            const token = jwt.sign(userEmail, process.env.SECRET_KEY, { expiresIn: '365d' })
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+            })
+                .send({ success: true })
+        });
+        app.post("/logout", async (req, res) => {
+
+            res.clearCookie('token', {
+                maxAge: 0,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+            })
+                .send({ success: true })
+        });
+
+        app.post("/my-queries", verifyToken, async (req, res) => {
             const newQuery = req.body;
             const result = await addedQueries.insertOne(newQuery);
             res.send(result);
         });
 
-        app.get("/my-queries", async (req, res) => {
+        app.get("/my-queries", verifyToken, async (req, res) => {
             const userEmail = req.query.userEmail;
             const limit = parseInt(req.query.limit) || 0;
+            const decoded = req.user.email
+
+            if (userEmail !== decoded) {
+                return res.status(401).send({ message: "Unauthorized access" });
+            }
+
 
             let query = {};
             if (userEmail) {
@@ -124,7 +173,7 @@ async function run() {
             res.send(result);
         });
 
-        app.get("/recommendations", async (req, res) => {
+        app.get("/recommendations", verifyToken, async (req, res) => {
             const recommenderEmail = req.query.userEmail;
             const userEmail = req.query.queryUserEmail
             if (recommenderEmail) {
