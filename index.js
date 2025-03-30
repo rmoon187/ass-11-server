@@ -12,7 +12,7 @@ const port = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(cors({ origin: ["http://localhost:5173", "https://fir-first-p.web.app", "https://fir-first-p.firebaseapp.com"], credentials: true }));
 
 const verifyToken = (req, res, next) => {
     const token = req.cookies?.token;
@@ -32,7 +32,7 @@ const verifyToken = (req, res, next) => {
 
 
 // MongoDB Connection
-const uri = `mongodb+srv://ass-11-user:${encodeURIComponent(process.env.DB_Pass)}@cluster0.isok8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = `mongodb+srv://${process.env.DB_User}:${encodeURIComponent(process.env.DB_Pass)}@cluster0.isok8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 
 const client = new MongoClient(uri, {
@@ -46,9 +46,9 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
         const database = client.db("recomHubDb");
@@ -82,21 +82,15 @@ async function run() {
                 .send({ success: true })
         });
 
-        app.post("/my-queries", verifyToken, async (req, res) => {
+        app.post("/my-queries", async (req, res) => {
             const newQuery = req.body;
             const result = await addedQueries.insertOne(newQuery);
             res.send(result);
         });
 
-        app.get("/my-queries", verifyToken, async (req, res) => {
+        app.get("/my-queries", async (req, res) => {
             const userEmail = req.query.userEmail;
             const limit = parseInt(req.query.limit) || 0;
-            const decoded = req.user.email
-
-            if (userEmail !== decoded) {
-                return res.status(401).send({ message: "Unauthorized access" });
-            }
-
 
             let query = {};
             if (userEmail) {
