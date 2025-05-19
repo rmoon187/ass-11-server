@@ -12,7 +12,7 @@ const port = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: ["http://localhost:5173", "https://fir-first-p.web.app", "https://fir-first-p.firebaseapp.com"], credentials: true }));
+app.use(cors({ origin: ["http://localhost:5174","http://localhost:5173", "https://fir-first-p.web.app", "https://fir-first-p.firebaseapp.com"], credentials: true }));
 
 const verifyToken = (req, res, next) => {
     const token = req.cookies?.token;
